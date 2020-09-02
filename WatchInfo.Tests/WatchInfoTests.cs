@@ -4,15 +4,27 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Extensions.Logging.Abstractions;
 using NUnit.Framework;
+using Moq;
+using System.Collections.Generic;
+using System.Security.Claims;
 
 namespace WatchInfo.Tests
 {
     [TestFixture]
     public class Tests
     {
+        private ClaimsPrincipal claimsPrincipal;
+
         [SetUp]
         public void Setup()
         {
+            var claims = new List<Claim>() 
+            { 
+                new Claim(ClaimTypes.NameIdentifier, "userid"),
+                new Claim("tenant_id", "acme.com"),
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            this.claimsPrincipal = new ClaimsPrincipal(identity);
         }
 
         [Test]
@@ -33,7 +45,9 @@ namespace WatchInfo.Tests
 
             var logger = NullLoggerFactory.Instance.CreateLogger("Null Logger");
 
-            var response = WatchPortalFunction.WatchInfo.Run(request, logger);
+            var mock = new Mock<Security.IAccessTokenProvider>();
+            mock.Setup(foo => foo.ValidateToken(request)).ReturnsAsync(this.claimsPrincipal);
+            var response = new WatchPortalFunction.WatchInfo(mock.Object).Run(request, logger);
             response.Wait();
 
             // Check that the response is an "OK" response
@@ -53,7 +67,9 @@ namespace WatchInfo.Tests
             var request = new DefaultHttpRequest(new DefaultHttpContext());
             var logger = NullLoggerFactory.Instance.CreateLogger("Null Logger");
 
-            var response = WatchPortalFunction.WatchInfo.Run(request, logger);
+            var mock = new Mock<Security.IAccessTokenProvider>();
+            mock.Setup(foo => foo.ValidateToken(request)).ReturnsAsync(this.claimsPrincipal);
+            var response = new WatchPortalFunction.WatchInfo(mock.Object).Run(request, logger);
             response.Wait();
 
             // Check that the response is an "Bad" response
@@ -75,14 +91,16 @@ namespace WatchInfo.Tests
                 (
                     new System.Collections.Generic.Dictionary<string, StringValues>()
                     {
-                { "not-model", queryStringValue }
+                        { "not-model", queryStringValue }
                     }
                 )
             };
 
             var logger = NullLoggerFactory.Instance.CreateLogger("Null Logger");
 
-            var response = WatchPortalFunction.WatchInfo.Run(request, logger);
+            var mock = new Mock<Security.IAccessTokenProvider>();
+            mock.Setup(foo => foo.ValidateToken(request)).ReturnsAsync(this.claimsPrincipal);
+            var response = new WatchPortalFunction.WatchInfo(mock.Object).Run(request, logger);
             response.Wait();
 
             // Check that the response is an "Bad" response
