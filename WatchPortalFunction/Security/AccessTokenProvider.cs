@@ -17,19 +17,19 @@ namespace Security
         private const string AuthHeaderName = "Authorization";
         private const string BearerPrefix = "Bearer ";
         private readonly string audience;
-        private readonly string issuer;
+        private readonly string authority;
         private readonly ConfigurationManager<OpenIdConnectConfiguration> configurationManager;
 
-        public AccessTokenProvider(string audience, string issuer)
+        public AccessTokenProvider(string audience, string authority)
         {
             this.audience = audience;
-            this.issuer = issuer;
+            this.authority = authority;
 
             var documentRetriever = new HttpDocumentRetriever();
-            documentRetriever.RequireHttps = issuer.StartsWith("https://");
+            documentRetriever.RequireHttps = authority.StartsWith("https://");
 
             this.configurationManager = new ConfigurationManager<OpenIdConnectConfiguration>(
-                $"{issuer}/.well-known/openid-configuration",
+                $"{authority}/.well-known/openid-configuration",
                 new OpenIdConnectConfigurationRetriever(),
                 documentRetriever
             );
@@ -55,7 +55,7 @@ namespace Security
                         RequireSignedTokens = true,
                         ValidAudience = this.audience,
                         ValidateAudience = true,
-                        ValidIssuer = this.issuer,
+                        ValidIssuer = this.authority,
                         ValidateIssuer = true,
                         ValidateIssuerSigningKey = true,
                         ValidateLifetime = true,
